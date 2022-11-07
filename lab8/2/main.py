@@ -52,7 +52,6 @@ while not finished:
             if (click(event.pos)):
                 screen.fill(BLACK)
                 new_ball()
-                new_ball()
     pygame.display.update()
 
 
