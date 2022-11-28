@@ -46,19 +46,24 @@ class Ball:
         self.vy = 0
         self.color = choice(GAME_COLORS)
         self.live = 30
-        self.type = randint(0, 1)
 
-    def move(self):
-        """Переместить мяч по прошествии единицы времени.
+    def hit(self, obj):
+        """Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
 
-        Обновляет значения self.x и self.y с учетом скоростей self.vx и self.vy, силы гравитации, действующей на мяч,
-        стен по краям окна (размер окна 800х600), а также типа снаряда
+        Args:
+        obj: Обьект, с которым проверяется столкновение.
+        Returns:
+        Возвращает True в случае столкновения мяча и цели. В противном случае возвращает False.
         """
-
-        if self.type == 0:
-            self.vy += 1
+        if ((self.x - obj.x)**2 + (self.y - obj.y)**2) <= (self.r + obj.r) ** 2:
+            return True
         else:
-            self.vy += 2
+            return False
+
+
+class Heavyball(Ball):
+    def move(self):
+        self.vy += 2
         self.x += self.vx
         self.y += self.vy
         if self.x + self.r >= WIDTH:
@@ -74,40 +79,42 @@ class Ball:
                 self.vy = 0
 
     def draw(self):
-        """
-        Внутри тяжелого снаряда вертикальный эллипсоид, а внутри легкого - вертикальный
-        """
-        if self.type == 0:
-            pygame.draw.circle(
-                self.screen,
-                self.color,
-                (self.x, self.y),
-                self.r
+        pygame.draw.circle(
+            self.screen,
+            self.color,
+            (self.x, self.y),
+            self.r
             )
-            pygame.draw.ellipse(self.screen, BLACK,
-                                (self.x - self.r, self.y - (self.r - 7), 2*self.r, 2*(self.r - 7)))
-        else:
-            pygame.draw.circle(
-                self.screen,
-                self.color,
-                (self.x, self.y),
-                self.r
-            )
-            pygame.draw.ellipse(self.screen, BLACK,
-                                (self.x - (self.r - 7), self.y - self.r, 2 * (self.r - 7), 2 * self.r))
+        pygame.draw.ellipse(self.screen, BLACK,
+                            (self.x - (self.r - 7), self.y - self.r, 2 * (self.r - 7), 2 * self.r))
 
-    def hit(self, obj):
-        """Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
 
-        Args:
-        obj: Обьект, с которым проверяется столкновение.
-        Returns:
-        Возвращает True в случае столкновения мяча и цели. В противном случае возвращает False.
-        """
-        if ((self.x - obj.x)**2 + (self.y - obj.y)**2) <= (self.r + obj.r) ** 2:
-            return True
-        else:
-            return False
+class Lightball(Ball):
+    def move(self):
+        self.vy += 1
+        self.x += self.vx
+        self.y += self.vy
+        if self.x + self.r >= WIDTH:
+            self.vx = -self.vx // 2
+            if self.vx < 1:
+                self.x = WIDTH - self.r
+        if self.y + self.r >= HEIGHT - 50:
+            self.vy = -self.vy // 2
+            self.vx = self.vx // 2
+            if abs(self.vy) < 0.1:
+                self.y = HEIGHT - 50 - self.r
+                self.vx = 0
+                self.vy = 0
+
+    def draw(self):
+        pygame.draw.circle(
+            self.screen,
+            self.color,
+            (self.x, self.y),
+            self.r
+        )
+        pygame.draw.ellipse(self.screen, BLACK,
+                            (self.x - self.r, self.y - (self.r - 7), 2 * self.r, 2 * (self.r - 7)))
 
 
 class Tank:
@@ -265,35 +272,59 @@ class Target:
         color = self.color = RED
         vx = self.vx = randint(5, 10)
         vy = self.vy = randint(5, 10)
-        self.type = randint(0, 2)
 
+
+class Usualtarget(Target):
     def draw(self):
-        """
-        0, 1 - золотые снаряды, 2 - красный
-        """
-        if self.type == 2:
-            pygame.draw.circle(screen,
-            RED,
-            (self.x, self.y),
-            self.r
-        )
-        else:
-            pygame.draw.circle(screen,
-            0xFFD700,
-            (self.x, self.y),
-            self.r
-        )
+        pygame.draw.circle(screen,
+        RED,
+        (self.x, self.y),
+        self.r)
 
     def move(self):
-        if self.type == 0 and self.y < 215:
+        self.x += self.vx
+        self.y += self.vy
+        if self.x + self.r >= 800 or self.x - self.r <= 200:
+            self.vx = -self.vx
+        if self.y + self.r >= 400:
+            self.vy = -self.vy
+        elif self.y - self.r <= 50:
+            self.vy = -self.vy
+
+
+class Updowntarget(Target):
+    def draw(self):
+        pygame.draw.circle(screen,
+                           0xFFD700,
+                           (self.x, self.y),
+                           self.r)
+
+    def move(self):
+        if self.y < 215:
             self.vy += 1
-        elif self.type == 0 and self.y > 215:
-            self.vy += -1
         else:
-            self.vy = self.vy
-        if self.type == 1 and self.x < 500:
+            self.vy += -1
+        self.x += self.vx
+        self.y += self.vy
+        if self.x + self.r >= 800 or self.x - self.r <= 200:
+            self.vx = -self.vx
+        if self.y + self.r >= 400:
+            self.vy = -self.vy
+        elif self.y - self.r <= 50:
+            self.vy = -self.vy
+
+
+class Rightlefttarget(Target):
+    def draw(self):
+        pygame.draw.circle(screen,
+                           0xFFD700,
+                           (self.x, self.y),
+                           self.r)
+
+    def move(self):
+        if self.x < 500:
             self.vx += 1
-        elif self.type == 0 and self.x > 500:
+        else:
             self.vx += -1
         self.x += self.vx
         self.y += self.vy
